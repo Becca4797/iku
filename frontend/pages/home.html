@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>iku</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/home.css" />
+</head>
+<body>
+  <main class="home">
+    <!-- The map fills everything above the bottom bar -->
+    <div id="map" class="map"></div>
+    <p id="map-error" class="map-error" hidden></p>
+
+    <!-- Search bar (Places autocomplete is added later) -->
+    <form id="search-form" class="search" role="search">
+      <svg viewBox="0 0 24 24" class="icon search-icon" aria-hidden="true">
+        <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" />
+        <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+      </svg>
+      <input id="search-input" type="search" placeholder="Search" autocomplete="off" aria-label="Search for a destination" />
+    </form>
+
+    <!-- Map layers button: switches between satellite and standard map -->
+    <button id="layers-btn" class="round-btn layers-btn" type="button" aria-label="Change map type">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+        <path d="M12 3 2 8.5 12 14l10-5.5L12 3Z" fill="currentColor" />
+        <path d="m4.5 12.2-2.5 1.3L12 19l10-5.5-2.5-1.3L12 16.7l-7.5-4.5Z" fill="currentColor" />
+        <path d="m4.5 16.2-2.5 1.3L12 23l10-5.5-2.5-1.3L12 20.7l-7.5-4.5Z" fill="currentColor" />
+      </svg>
+    </button>
+
+    <!-- Notification bell -->
+    <button id="bell-btn" class="round-btn bell-btn" type="button" aria-label="Alerts">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+        <path d="M12 2.5a1.6 1.6 0 0 0-1.6 1.6v.6C7.6 5.4 6 7.8 6 10.6v3.6l-1.8 2.3c-.5.6 0 1.5.8 1.5h14c.8 0 1.3-.9.8-1.5L18 14.2v-3.6c0-2.8-1.6-5.2-4.4-5.9v-.6A1.6 1.6 0 0 0 12 2.5Z" fill="currentColor" />
+        <path d="M9.6 19.2a2.4 2.4 0 0 0 4.8 0H9.6Z" fill="currentColor" />
+      </svg>
+    </button>
+
+    <!-- Buttons revealed by the bell -->
+    <div id="alert-actions" class="alert-actions" hidden>
+      <button id="reroute-btn" class="action-btn reroute-btn" type="button">Reroute</button>
+      <button id="danger-btn" class="action-btn danger-btn" type="button">Danger<br />Alert</button>
+    </div>
+
+    <!-- Report a problem panel, toggled by the flag button -->
+    <section id="report-panel" class="report-panel" hidden aria-label="Report a problem">
+      <h2 class="report-title">Report a problem</h2>
+      <div class="report-grid">
+
+        <button class="report-item" type="button" data-type="heavy-foot-traffic">
+          <span class="report-icon">
+            <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="17" cy="29" rx="5.5" ry="9" />
+              <circle cx="12.5" cy="15.5" r="1.8" /><circle cx="16.5" cy="13.5" r="1.8" /><circle cx="20.5" cy="14.5" r="1.8" />
+              <ellipse cx="32" cy="27" rx="5.5" ry="9" />
+              <circle cx="27.5" cy="13.5" r="1.8" /><circle cx="31.5" cy="11.5" r="1.8" /><circle cx="35.5" cy="12.5" r="1.8" />
+            </svg>
+          </span>
+          <span class="report-label">Heavy Foot Traffic</span>
+        </button>
+
+        <button class="report-item" type="button" data-type="crime-scene">
+          <span class="report-icon">
+            <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="21" cy="21" r="12" />
+              <path d="M13.5 22c0-4.5 3-8 7.5-8s7.5 3.5 7.5 8" />
+              <path d="M16.5 24c0-3 1.8-5.5 4.5-5.5s4.5 2.5 4.5 5.5" />
+              <path d="M19 26c0-1.5.8-3 2-3s2 1.500 2 3" />
+              <line x1="30" y1="30" x2="42" y2="42" stroke-width="4" />
+            </svg>
+          </span>
+          <span class="report-label">Crime Scene</span>
+        </button>
+
+        <button class="report-item" type="button" data-type="disruptive-works">
+          <span class="report-icon report-icon-plain">
+            <svg viewBox="0 0 48 48" aria-hidden="true" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M24 5 44 40H4L24 5Z" fill="#fff" stroke="#d32f2f" stroke-width="5" />
+              <circle cx="22" cy="21" r="2.6" fill="#000" />
+              <path d="M22 24.500 19 32M22 24.500l5 4.500M19 32l-2.500 4M19 32l5 1 2.500 3.500M27 29l3-5" fill="none" stroke="#000" stroke-width="2.4" />
+            </svg>
+          </span>
+          <span class="report-label">Disruptive works</span>
+        </button>
+
+        <button class="report-item" type="button" data-type="dangerous-individuals">
+          <span class="report-icon">
+            <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round">
+              <circle cx="24" cy="24" r="17" stroke-width="4" />
+              <line x1="24" y1="13" x2="24" y2="26" stroke-width="4.500" />
+              <circle cx="24" cy="33" r="2.600" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <span class="report-label">Dangerous Induviduals</span>
+        </button>
+
+        <button class="report-item" type="button" data-type="broken-streetlights">
+          <span class="report-icon">
+            <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18.500 32v-3c0-1.500-.8-2.500-2-3.800A9 9 0 1 1 31.500 25.200c-1.200 1.300-2 2.300-2 3.800v3Z" />
+              <line x1="19" y1="36" x2="29" y2="36" />
+              <line x1="21" y1="40" x2="27" y2="40" />
+              <line x1="24" y1="3" x2="24" y2="6" /><line x1="9" y1="9" x2="11.500" y2="11.500" /><line x1="39" y1="9" x2="36.500" y2="11.500" />
+              <line x1="5" y1="20" x2="8" y2="20" /><line x1="40" y1="20" x2="43" y2="20" />
+            </svg>
+          </span>
+          <span class="report-label">Broken streetlights causing dark spots</span>
+        </button>
+
+        <button class="report-item" type="button" data-type="escalating-conflict">
+          <span class="report-icon">
+            <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 8h20a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H17l-6 5v-5H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4Z" />
+              <path d="M22 28v2a4 4 0 0 0 4 4h6l6 5v-5h2a4 4 0 0 0 4-4v-8a4 4 0 0 0-4-4h-6" />
+              <circle cx="12" cy="16" r="1" fill="currentColor" /><circle cx="18" cy="16" r="1" fill="currentColor" /><circle cx="24" cy="16" r="1" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="report-label">Escalating conflict</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- Safe places panel, toggled by the bookmark button -->
+    <section id="safe-panel" class="safe-panel" hidden aria-label="Safe places">
+      <h2 class="safe-title">Add your safe places:</h2>
+
+      <form id="safe-form" class="safe-form" novalidate>
+        <button class="plus-btn" type="submit" aria-label="Add postcode">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none" />
+          </svg>
+        </button>
+        <input id="safe-input" class="safe-input" type="text" placeholder="Enter a postcode..." autocomplete="postal-code" aria-label="Postcode" />
+      </form>
+
+      <p id="safe-message" class="safe-message" role="alert"></p>
+      <p id="safe-empty" class="safe-empty">No safe places yet.</p>
+      <ul id="safe-list" class="safe-list"></ul>
+    </section>
+    
+    <!-- Bottom bar -->
+    <nav class="bottom-bar" aria-label="Main">
+      <button id="routes-btn" class="nav-btn nav-flag" type="button" aria-label="Routes">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+          <path d="M5 2.5h1.8v19H5v-19Z" fill="currentColor" />
+          <path d="M7.5 4c3-1.6 5 1.4 8-.2 1.6-.9 3-.6 4 .2v8c-1-.8-2.4-1.1-4-.2-3 1.6-5-1.4-8 .2V4Z" fill="currentColor" />
+        </svg>
+      </button>
+      <button id="safe-areas-btn" class="nav-btn nav-bookmark" type="button" aria-label="Safe areas">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+          <path d="M6 2.5h12a1 1 0 0 1 1 1v18l-7-4.6-7 4.6v-18a1 1 0 0 1 1-1Z" fill="currentColor" />
+        </svg>
+      </button>
+      <button id="settings-btn" class="nav-btn nav-settings" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" d="M10.3 2h3.4l.5 2.6c.5.2 1 .5 1.5.8l2.5-.9 1.7 3-2 1.7c.1.6.1 1.2 0 1.8l2 1.7-1.7 3-2.5-.9c-.5.3-1 .6-1.5.8l-.5 2.6h-3.4l-.5-2.6c-.5-.2-1-.5-1.5-.8l-2.5.9-1.7-3 2-1.7a6 6 0 0 1 0-1.8l-2-1.7 1.7-3 2.5.9c.5-.3 1-.6 1.5-.8L10.3 2ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" transform="translate(0 1.5)" />
+        </svg>
+      </button>
+    </nav>
+
+    <!-- Settings sheet -->
+    <div id="sheet" class="sheet" hidden>
+      <div class="sheet-card">
+        <h2 class="sheet-title">Settings</h2>
+
+        <label class="switch-row">
+          <input id="open-toggle" class="switch-input" type="checkbox" role="switch" checked />
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+          <span class="switch-label">Show open establishments</span>
+        </label>
+
+        <button id="logout-btn" class="btn" type="button">Log out</button>
+        <button id="sheet-close" class="sheet-close" type="button">Close</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/pages/home.js"></script>
+</body>
+</html>

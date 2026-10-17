@@ -5,6 +5,11 @@ const form = document.getElementById("register-form");
 const message = document.getElementById("message");
 const button = form.querySelector("button[type=submit]");
 
+function show(text, type) {
+  message.textContent = text;
+  message.className = `message ${type}`;
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   message.textContent = "";
@@ -19,21 +24,26 @@ form.addEventListener("submit", async (event) => {
     confirmPassword: document.getElementById("confirm-password").value,
   };
 
-  // Mistakes on the form are shown on the page so the user can fix them
   const problem = validateRegistration(values);
   if (problem) {
-    message.textContent = problem;
-    message.classList.add("error");
+    show(problem, "error");
     return;
   }
 
   button.disabled = true;
-  const { error } = await signUp(values);
+  const { data, error } = await signUp(values);
 
   if (error) {
     console.error("Sign up failed:", error.message);
-    window.location.href = "/pages/test.html?result=failed";
+    show("We couldn't create your account. Please try again.", "error");
+    button.disabled = false;
     return;
   }
-  window.location.href = "/pages/test.html?result=success";
+
+  if (data.session) {
+    window.location.href = "/pages/home.html";
+  } else {
+    // Happens when Confirm email is switched on in Supabase
+    show("Check your email to confirm your account, then log in.", "success");
+  }
 });

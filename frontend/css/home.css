@@ -1,0 +1,518 @@
+/* The phone-shaped column for the home screen */
+.home {
+  --bar-height: 96px;
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0 auto;
+  background: var(--white);
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--bar-height);
+  background: #222;
+}
+
+.map-error {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 14px 18px;
+  background: var(--white);
+  border: 2px solid var(--mahogany);
+  border-radius: 18px;
+  text-align: center;
+  font-size: 16px;
+  z-index: 3;
+}
+
+.icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Search bar */
+.search {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 16px);
+  left: 6%;
+  right: 6%;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  z-index: 2;
+}
+
+.search-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  color: var(--green);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 20px;
+  color: var(--mahogany);
+}
+
+/* Round floating buttons on the map */
+.round-btn {
+  position: absolute;
+  width: 62px;
+  height: 62px;
+  padding: 16px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.layers-btn {
+  top: calc(max(env(safe-area-inset-top), 16px) + 76px);
+  left: 6%;
+  background: var(--white);
+  color: #000;
+}
+
+.bell-btn {
+  top: calc(max(env(safe-area-inset-top), 16px) + 76px);
+  right: 6%;
+  background: #d32f2f;
+  color: var(--white);
+}
+
+/* Bell: turns white with a red bell while the extra buttons are showing */
+.bell-btn[aria-pressed="true"] {
+  background: var(--white);
+  color: #d32f2f;
+}
+
+/* Reroute and Danger Alert buttons, stacked under the bell */
+.alert-actions {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  right: 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+}
+
+.alert-actions[hidden] {
+  display: none;
+}
+
+.action-btn {
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--white);
+  font-family: var(--font-body);
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 1.15;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
+.reroute-btn {
+  background: var(--green);
+}
+
+.danger-btn {
+  background: #d32f2f;
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Bottom bar */
+.bottom-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--bar-height);
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  background: var(--white);
+  z-index: 2;
+}
+
+.nav-btn {
+  width: 76px;
+  height: 76px;
+  padding: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.nav-flag { color: var(--peach); }
+.nav-bookmark { color: var(--green); }
+.nav-settings { color: #3a3a3a; }
+
+.nav-btn:active,
+.round-btn:active {
+  transform: translateY(1px);
+}
+
+/* Flag button: filled peach with a white flag while the panel is open */
+.nav-flag[aria-pressed="true"] {
+  background: var(--peach);
+  color: var(--white);
+}
+
+/* Report a problem panel */
+.report-panel {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  left: 14%;
+  right: 12%;
+  padding: 18px 12px 18px;
+  background: var(--white);
+  border-radius: 26px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.45);
+  z-index: 3;
+}
+
+.report-panel[hidden] {
+  display: none;
+}
+
+.report-title {
+  margin: 0 0 14px;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 30px;
+  color: #000;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 6px;
+}
+
+.report-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: #000;
+}
+
+.report-icon {
+  width: 68px;
+  height: 68px;
+  padding: 14px;
+  display: block;
+  background: var(--white);
+  border: 2px solid #000;
+  border-radius: 50%;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.report-icon-plain {
+  padding: 12px;
+}
+
+.report-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.report-label {
+  font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  font-stretch: condensed;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.report-item:active .report-icon {
+  transform: translateY(1px);
+}
+
+/* Settings sheet */
+.sheet {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 10;
+}
+
+.sheet[hidden] {
+  display: none;
+}
+
+.sheet-card {
+  width: 100%;
+  padding: 28px 28px 36px;
+  background: var(--gold);
+  border-radius: 28px 28px 0 0;
+  text-align: center;
+}
+
+.sheet-title {
+  margin: 0 0 22px;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 40px;
+  text-transform: uppercase;
+  color: var(--peach);
+  -webkit-text-stroke: 1.5px var(--mahogany);
+  paint-order: stroke fill;
+}
+
+.sheet-close {
+  display: block;
+  margin: 18px auto 0;
+  background: none;
+  border: 0;
+  font-size: 18px;
+  color: var(--mahogany);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Toggle switch (used in Settings) */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #000;
+}
+
+.switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch-track {
+  position: relative;
+  flex: none;
+  width: 54px;
+  height: 28px;
+  background: #b5b5b5;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: var(--white);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.switch-input:checked + .switch-track {
+  background: var(--green);
+}
+
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(26px);
+}
+
+.switch-input:focus-visible + .switch-track {
+  outline: 3px solid rgba(63, 138, 60, 0.5);
+  outline-offset: 2px;
+}
+
+/* Centre the toggle inside the Settings sheet, above Log out */
+.sheet-card .switch-row {
+  justify-content: center;
+  margin: 0 0 24px;
+}
+
+/* Bookmark button: filled green with a white icon while the panel is open */
+.nav-bookmark[aria-pressed="true"] {
+  background: var(--green);
+  color: var(--white);
+}
+
+/* Safe places panel */
+.safe-panel {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  bottom: calc(var(--bar-height) + 44px);
+  left: 10%;
+  right: 8%;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px 18px;
+  background: var(--white);
+  border-radius: 26px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.45);
+  z-index: 3;
+}
+
+.safe-panel[hidden] {
+  display: none;
+}
+
+.safe-title {
+  margin: 0 0 18px 6px;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 26px;
+  color: #000;
+}
+
+.safe-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.plus-btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  padding: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--peach);
+  color: var(--white);
+  cursor: pointer;
+}
+
+.plus-btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.safe-input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 20px;
+  border: 2px solid #b8c7d9;
+  border-radius: 18px;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--mahogany);
+}
+
+.safe-input:focus {
+  border-color: var(--green);
+}
+
+.safe-message {
+  flex: none;
+  min-height: 1.2em;
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #b00020;
+}
+
+.safe-empty {
+  margin: 20px 6px;
+  font-size: 16px;
+  color: #777;
+}
+
+.safe-empty[hidden] {
+  display: none;
+}
+
+/* Scrolling list of saved postcodes */
+.safe-list {
+  flex: 1;
+  min-height: 0;
+  margin: 8px 0 0;
+  padding: 0 6px 0 0;
+  list-style: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #777 #ddd;
+}
+
+.safe-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 4px;
+  transition: opacity 0.25s ease;
+}
+
+.safe-item.removing {
+  opacity: 0.3;
+}
+
+.heart-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--peach);
+  cursor: pointer;
+}
+
+.heart-btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.safe-postcode {
+  font-size: 22px;
+  font-weight: bold;
+  color: #000;
+}

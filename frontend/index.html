@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/pages/login.html" />
   <title>iku</title>
 </head>
-<body></body>
+<body>
+  <script type="module">
+    import { supabase } from "/js/supabaseClient.js";
+    const { data: { session } } = await supabase.auth.getSession();
+    window.location.replace(session ? "/pages/home.html" : "/pages/login.html");
+  </script>
+</body>
 </html>

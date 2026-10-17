@@ -30,23 +30,20 @@ form.addEventListener("submit", async (event) => {
   const { error } = await logIn(values);
 
   if (!error) {
-    window.location.href = "/pages/test.html?result=success";
+    window.location.href = "/pages/home.html";
     return;
   }
 
   console.error("Login failed:", error.message);
 
-  // Wrong email OR wrong password: same message for both
   const badCredentials =
     error.code === "invalid_credentials" ||
     error.message.toLowerCase().includes("invalid login credentials");
 
-  if (badCredentials) {
-    showError("Incorrect email or password.");
-    button.disabled = false;
-    return;
-  }
-
-  // Anything else (network problem, unconfirmed email, etc.)
-  window.location.href = "/pages/test.html?result=failed";
+  showError(
+    badCredentials
+      ? "Incorrect email or password."
+      : "Something went wrong. Please try again."
+  );
+  button.disabled = false;
 });
