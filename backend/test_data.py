@@ -1,13 +1,14 @@
 
 from data import fetch_lamps, fetch_lit_streets
 
-# Small area near UCL in central London
+# Very small area near UCL
 bounds = (
-    51.520,
-    -0.140,
-    51.530,
-    -0.125
+    51.5235,
+    -0.1355,
+    51.5255,
+    -0.1325
 )
+
 
 print("Fetching OpenStreetMap data...")
 
