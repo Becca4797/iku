@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Result</title>
+  <link rel="stylesheet" href="/css/base.css" />
+</head>
+<body>
+  <main class="screen" style="text-align: center;">
+    <h1 id="result" class="title" style="margin-top: 30vh;"></h1>
+    <p style="margin-top: 40px;"><a href="/pages/login.html">Back to login</a></p>
+  </main>
+
+  <script>
+    const ok = new URLSearchParams(window.location.search).get("result") === "success";
+    document.getElementById("result").textContent = ok ? "Success!" : "Failed";
+  </script>
+</body>
+</html>

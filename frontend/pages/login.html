@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+  <main class="screen">
+    <svg class="wave" viewBox="0 0 1000 150" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,60 C120,60 160,120 250,120 C340,120 380,20 500,20 C620,20 660,120 750,120 C840,120 880,60 1000,60 L1000,150 L0,150 Z" />
+    </svg>
+
+    <h1 class="title">Login</h1>
+
+    <form id="login-form" class="login-form" novalidate>
+      <input
+        id="email"
+        class="pill-input"
+        type="email"
+        placeholder="Enter Email..."
+        autocomplete="email"
+        required
+      />
+
+      <input
+        id="password"
+        class="pill-input"
+        type="password"
+        placeholder="Enter Password..."
+        autocomplete="current-password"
+        required
+      />
+
+      <a class="forgot-link" href="/pages/forgot-password.html">Forgot Password?</a>
+
+      <div class="login-row">
+        <button class="btn" type="submit">Login</button>
+      </div>
+
+      <p id="message" class="message" role="alert"></p>
+    </form>
+
+    <p class="no-account">Don’t have an account?</p>
+    <div class="signup-wrap">
+      <a class="btn" href="/pages/register.html">Sign up</a>
+    </div>
+  </main>
+
+  <script type="module" src="/js/pages/login.js"></script>
+</body>
+</html>

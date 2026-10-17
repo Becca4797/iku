@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+  <main class="screen">
+    <h1 class="title">Register</h1>
+
+    <form id="register-form" class="register-form" novalidate>
+      <div class="field">
+        <label for="first-name">First name</label>
+        <input id="first-name" class="pill-input" type="text" autocomplete="given-name" required />
+      </div>
+
+      <div class="field">
+        <label for="last-name">Last name</label>
+        <input id="last-name" class="pill-input" type="text" autocomplete="family-name" required />
+      </div>
+
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input id="email" class="pill-input" type="email" autocomplete="email" required />
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input id="phone" class="pill-input" type="tel" autocomplete="tel" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <div class="hint" id="password-hint">
+            Password must contain the following:
+            <ul>
+              <li>Minimum of 8 characters</li>
+              <li>Letters and numbers</li>
+            </ul>
+          </div>
+          <input
+            id="password"
+            class="pill-input"
+            type="password"
+            autocomplete="new-password"
+            aria-describedby="password-hint"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="confirm-password">Confirm Password</label>
+        <input id="confirm-password" class="pill-input" type="password" autocomplete="new-password" required />
+      </div>
+
+      <p id="message" class="message" role="alert"></p>
+
+      <div class="register-actions">
+        <button class="btn" type="submit">Create account</button>
+      </div>
+
+      <a class="back-link" href="/pages/login.html">Already have an account? Log in</a>
+    </form>
+  </main>
+
+  <script type="module" src="/js/pages/register.js"></script>
+</body>
+</html>
