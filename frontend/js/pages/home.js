@@ -268,6 +268,7 @@ async function start() {
   const reportPanel = document.getElementById("report-panel");
   const safeBtn = document.getElementById("safe-areas-btn");
   const safePanel = document.getElementById("safe-panel");
+  const dangerPanel = document.getElementById("danger-panel");
 
   function setBell(on) {
     alertActions.hidden = !on;
@@ -284,26 +285,31 @@ async function start() {
     safeBtn.setAttribute("aria-pressed", String(on));
   }
 
+  function setDanger(on) {
+    dangerPanel.hidden = !on;
+  }
+
   setBell(false);
   setReport(false);
   setSafe(false);
+  setDanger(false);
 
   bellBtn.addEventListener("click", () => {
     const turnOn = alertActions.hidden;
     setBell(turnOn);
-    if (turnOn) { setReport(false); setSafe(false); }
+    if (turnOn) { setReport(false); setSafe(false); setDanger(false); }
   });
 
   flagBtn.addEventListener("click", () => {
     const turnOn = reportPanel.hidden;
     setReport(turnOn);
-    if (turnOn) { setBell(false); setSafe(false); }
+    if (turnOn) { setBell(false); setSafe(false); setDanger(false); }
   });
 
   safeBtn.addEventListener("click", () => {
     const turnOn = safePanel.hidden;
     setSafe(turnOn);
-    if (turnOn) { setBell(false); setReport(false); }
+    if (turnOn) { setBell(false); setReport(false); setDanger(false); }
   });
 
   // ---------- Placeholders for features we build later ----------
@@ -316,7 +322,16 @@ async function start() {
   rerouteBtn.addEventListener("click", () => {
     // Recalculating the route comes later
   });  
-  document.getElementById("danger-btn").addEventListener("click", () => {});
+  // Danger Alert: hide the bell buttons and show the emergency popup
+  document.getElementById("danger-btn").addEventListener("click", () => {
+    setBell(false);
+    setReport(false);
+    setSafe(false);
+    setDanger(true);
+  });
+  document.getElementById("danger-close").addEventListener("click", () => {
+    setDanger(false);
+  });
   document.querySelectorAll(".report-item").forEach((item) => {
     item.addEventListener("click", () => {
       // item.dataset.type is the problem type, e.g. "crime-scene"

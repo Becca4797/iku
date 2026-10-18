@@ -7,10 +7,7 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-from config import (
-    LONDON,
-    SAFETY_THRESHOLD,
-)
+from config import LONDON, SAFETY_THRESHOLD
 from geo import haversine
 from rank import rank_routes, label_routes
 from route_scoring import score_candidate
@@ -180,6 +177,21 @@ def _route_signature(points, precision=4):
     )
 
 
+def _fallback_sort_key(route, preference):
+    """Sort unverified routes without treating them as verified safe."""
+    seconds = route.get("seconds", float("inf"))
+    safety = route.get("safety")
+
+    if preference == "fastest":
+        return (seconds, safety is None, -(safety or 0))
+
+    if preference == "safest":
+        return (safety is None, -(safety or 0), seconds)
+
+    # Balanced fallback: use the available safety score, then duration.
+    return (safety is None, -(safety or 0), seconds)
+
+
 async def build_routes(
     start,
     destination,
@@ -188,17 +200,23 @@ async def build_routes(
     familiar_areas=None,
 ):
     """
-    Request Google's complete A-to-B walking alternatives, score them,
-    and rank the eligible routes.
+    Generate Google's available complete A-to-B walking routes,
+    score them, and rank eligible routes.
 
-    This version uses Google Routes only. It does not force routes around
-    a dangerous area, and it does not persist route records to the database.
+    If none pass the safety checks, return up to three usable routes
+    as unverified alternatives. Unverified routes must not be presented
+    as confirmed safe.
     """
     start = _validate_point(start, "start")
     destination = _validate_point(destination, "destination")
 
     if haversine(start, destination) < 1:
         raise ValueError("Start and destination must be different")
+
+    if preference not in {"safest", "balanced", "fastest"}:
+        raise ValueError(
+            "preference must be 'safest', 'balanced', or 'fastest'"
+        )
 
     if departure_time is None:
         departure_time = datetime.now(LONDON)
@@ -233,14 +251,20 @@ async def build_routes(
                 raw_route["start"] = start
                 raw_route["destination"] = destination
 
-                scored = await asyncio.to_thread(
-                    score_candidate,
-                    raw_route,
-                    scorers,
-                    departure_time,
-                    familiar_areas,
-                    SAFETY_THRESHOLD,
-                )
+                try:
+                    scored = await asyncio.to_thread(
+                        score_candidate,
+                        raw_route,
+                        scorers,
+                        departure_time,
+                        familiar_areas,
+                        SAFETY_THRESHOLD,
+                    )
+                except Exception as exc:
+                    errors.append(
+                        f"Scoring failed for {raw_route['id']}: {exc}"
+                    )
+                    continue
 
                 candidates.append(scored)
 
@@ -253,8 +277,45 @@ async def build_routes(
         ) as exc:
             errors.append(f"Google routing error: {exc}")
 
+    # Prefer routes that passed the existing safety checks.
     ranked = rank_routes(candidates, preference)
     labelled = label_routes(ranked)
+    result_status = "ok"
+
+    # If none pass, offer usable alternatives with an explicit warning.
+    if not labelled:
+        fallback_routes = [
+            route
+            for route in candidates
+            if route.get("eligible") is not True
+            and route.get("pts")
+            and route.get("seconds", 0) > 0
+        ]
+
+        fallback_routes.sort(
+            key=lambda route: _fallback_sort_key(route, preference)
+        )
+
+        labelled = []
+
+        for route in fallback_routes[:3]:
+            alternative = dict(route)
+
+            # Keep the original score status for diagnostics.
+            alternative["scoring_status"] = route.get("status")
+            alternative["status"] = "unverified"
+            alternative["label"] = "Unverified alternative"
+            alternative["verification_note"] = (
+                "This route did not pass the safety checks. "
+                "Its safety has not been verified."
+            )
+
+            labelled.append(alternative)
+
+        if labelled:
+            result_status = "unverified_only"
+        else:
+            result_status = "no_eligible_routes"
 
     return {
         "start": start,
@@ -267,5 +328,5 @@ async def build_routes(
             for route in candidates
         ),
         "errors": errors,
-        "status": "ok" if labelled else "no_eligible_routes",
+        "status": result_status,
     }

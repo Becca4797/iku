@@ -533,3 +533,106 @@
 .heart-btn:hover {
   transform: scale(1.08);
 }
+
+/* Danger alert popup */
+.danger-panel {
+  position: absolute;
+  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  left: 10%;
+  right: 10%;
+  padding: 22px 12px 18px;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.45);
+  z-index: 3;
+}
+
+.danger-panel[hidden] {
+  display: none;
+}
+
+/* Cross in the corner of a popup */
+.panel-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mahogany);
+  cursor: pointer;
+}
+
+.panel-close svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.panel-close:hover {
+  background: rgba(49, 4, 0, 0.1);
+}
+
+.danger-calls {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.call-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 46%;
+  text-align: center;
+}
+
+.call-btn {
+  width: 120px;
+  height: 120px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--white);
+  font-family: var(--font-body);
+  font-weight: bold;
+  font-size: 34px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.call-btn svg {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+
+.call-999 { background: #d32f2f; }
+.call-111 { background: var(--green); }
+
+.call-btn:active {
+  transform: translateY(1px);
+}
+
+.call-label {
+  font-size: 18px;
+  line-height: 1.25;
+  color: #000;
+}
+
+.danger-status {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: #000;
+}
