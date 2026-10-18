@@ -5,7 +5,6 @@ import {
   getShowOpenEstablishments,
   setShowOpenEstablishments,
 } from "/js/mapSettings.js";
-import { renderSafeAreas } from "/js/safeAreasUi.js";
 import { isOnRoute, onRouteChange } from "/js/routeState.js";
 
 // Roughly King's Cross / Bloomsbury, London
@@ -18,12 +17,14 @@ function showMapError(text) {
   mapError.hidden = false;
 }
 
-// ---------- Session check ----------
-const { data: { session } } = await supabase.auth.getSession();
-if (!session) {
-  window.location.replace("/pages/login.html");
-} else {
-  start();
+// ---------- Helpers ----------
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+    ),
+  ]);
 }
 
 // If Supabase ends the session (log out, revoked token), go back to login
@@ -48,16 +49,183 @@ function loadGoogleMaps(key) {
   });
 }
 
+
+async function setupPlaceAutocomplete(input, map) {
+  const { AutocompleteSuggestion, AutocompleteSessionToken } =
+    await google.maps.importLibrary("places");
+
+  let sessionToken = null;
+  let requestId = 0;
+  let selectedDestination = null;
+
+  const form = document.getElementById("search-form");
+  if (!form || !input) return;
+
+  // Create a dropdown while keeping the existing search input.
+  const results = document.createElement("div");
+  results.id = "place-suggestions";
+  results.style.cssText = `
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    color: #310400;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    overflow: hidden;
+    display: none;
+  `;
+
+  form.appendChild(results);
+
+  function closeSuggestions() {
+    results.replaceChildren();
+    results.style.display = "none";
+  }
+
+  input.addEventListener("input", async () => {
+    const query = input.value.trim();
+    const currentRequest = ++requestId;
+
+    selectedDestination = null;
+
+    if (query.length < 3) {
+      closeSuggestions();
+      return;
+    }
+
+    if (!sessionToken) {
+      sessionToken = new AutocompleteSessionToken();
+    }
+
+    try {
+      const { suggestions } =
+        await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: query,
+          sessionToken,
+          includedRegionCodes: ["gb"],
+          language: "en-GB",
+        });
+
+      // Ignore outdated responses if the user has continued typing.
+      if (currentRequest !== requestId) return;
+
+      closeSuggestions();
+
+      for (const suggestion of suggestions) {
+        const prediction = suggestion.placePrediction;
+        if (!prediction) continue;
+
+        const option = document.createElement("button");
+        option.type = "button";
+        option.textContent = prediction.text.toString();
+
+        option.style.cssText = `
+          display: block;
+          width: 100%;
+          padding: 12px 14px;
+          border: 0;
+          background: white;
+          color: #310400;
+          text-align: left;
+          font: inherit;
+          cursor: pointer;
+        `;
+
+        option.addEventListener("mouseenter", () => {
+          option.style.background = "#fff2e8";
+        });
+
+        option.addEventListener("mouseleave", () => {
+          option.style.background = "white";
+        });
+
+        option.addEventListener("click", async () => {
+          try {
+            const place = prediction.toPlace();
+
+            await place.fetchFields({
+              fields: [
+                "formattedAddress",
+                "location",
+                "displayName",
+              ],
+            });
+
+            if (!place.location) return;
+
+            selectedDestination = {
+              lat: place.location.lat(),
+              lng: place.location.lng(),
+              address: place.formattedAddress ||
+                place.displayName ||
+                prediction.text.toString(),
+            };
+
+            input.value = selectedDestination.address;
+            closeSuggestions();
+
+            // End this autocomplete session.
+            sessionToken = null;
+
+            // For now, centre the map on the selected destination.
+            // Route calculation will be added separately.
+            map.panTo(place.location);
+            map.setZoom(16);
+
+            // Make the selected destination available to other
+            // front-end code without storing Google's place data.
+            window.dispatchEvent(
+              new CustomEvent("iku:destination-selected", {
+                detail: { ...selectedDestination },
+              })
+            );
+          } catch (error) {
+            console.error("Could not retrieve selected place:", error);
+          }
+        });
+
+        results.appendChild(option);
+      }
+
+      if (results.childElementCount > 0) {
+        results.style.display = "block";
+      }
+    } catch (error) {
+      console.error("Places autocomplete failed:", error);
+      closeSuggestions();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!form.contains(event.target)) {
+      closeSuggestions();
+    }
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    // Don't treat unselected text as a confirmed destination.
+    if (!selectedDestination) {
+      input.focus();
+    }
+  });
+}
+
 // Google calls this if the key is rejected (wrong key, restriction, billing)
 window.gm_authFailure = () => {
   showMapError("The map couldn't load. Check the Google Maps key and billing.");
 };
 
-async function start() {
+async function loadMap() {
   let map;
   try {
-    await loadGoogleMaps(GOOGLE_MAPS_API_KEY);
-    const { Map } = await google.maps.importLibrary("maps");
+    console.log("[iku] loading Google Maps script");
+    await withTimeout(loadGoogleMaps(GOOGLE_MAPS_API_KEY), 15000, "Google Maps script");
+    const { Map } = await withTimeout(google.maps.importLibrary("maps"), 15000, "Maps library");
     map = new Map(document.getElementById("map"), {
       center: LONDON_CENTRE,
       zoom: 15,
@@ -66,10 +234,20 @@ async function start() {
       gestureHandling: "greedy",
       clickableIcons: false,
     });
+    const searchInput = document.getElementById("search-input");
+
+    setupPlaceAutocomplete(searchInput, map).catch(error => {
+  console.error("Autocomplete setup failed:", error);
+});
   } catch (err) {
     console.error(err);
-    showMapError("The map couldn't load. Check your internet connection.");
+    showMapError("The map couldn't load: " + err.message);
   }
+  return map;
+}
+
+async function start() {
+  let map; // filled in by loadMap() below; buttons check it before using it
 
   // Layers button: switch between satellite-with-labels and the standard map
   document.getElementById("layers-btn").addEventListener("click", () => {
@@ -128,12 +306,6 @@ async function start() {
     if (turnOn) { setBell(false); setReport(false); }
   });
 
-  // ---------- Safe places (interface only for now) ----------
-  renderSafeAreas([]); // starts blank
-  document.getElementById("safe-form").addEventListener("submit", (event) => {
-    event.preventDefault(); // saving comes in the next step
-  });
-
   // ---------- Placeholders for features we build later ----------
   // Reroute is only available while the user is on a route
   const rerouteBtn = document.getElementById("reroute-btn");
@@ -174,4 +346,22 @@ async function start() {
     await logOut();
     window.location.replace("/pages/login.html");
   });
+  // ---------- Session check, then map (UI above already works) ----------
+  try {
+    console.log("[iku] checking session");
+    const { data: { session } } = await withTimeout(
+      supabase.auth.getSession(), 8000, "Supabase session check"
+    );
+    if (!session) {
+      window.location.replace("/pages/login.html");
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    showMapError("Could not reach Supabase: " + err.message +
+      ". If the project is paused, restore it in the Supabase dashboard.");
+  }
+  map = await loadMap();
 }
+
+start();

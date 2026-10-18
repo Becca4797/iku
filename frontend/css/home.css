@@ -520,3 +520,16 @@
 .action-btn[hidden] {
   display: none;
 }
+
+.safe-message:empty {
+  display: none;
+}
+
+.plus-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.heart-btn:hover {
+  transform: scale(1.08);
+}
