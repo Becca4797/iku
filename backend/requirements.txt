@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pyjwt
+httpx
+requests
+psycopg[binary]
+numpy
+scipy
+shapely
+pyproj
+astral
+tzdata

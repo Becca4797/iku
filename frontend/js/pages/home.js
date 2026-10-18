@@ -6,6 +6,7 @@ import {
   setShowOpenEstablishments,
 } from "/js/mapSettings.js";
 import { renderSafeAreas } from "/js/safeAreasUi.js";
+import { isOnRoute, onRouteChange } from "/js/routeState.js";
 
 // Roughly King's Cross / Bloomsbury, London
 const LONDON_CENTRE = { lat: 51.5295, lng: -0.1245 };
@@ -134,7 +135,15 @@ async function start() {
   });
 
   // ---------- Placeholders for features we build later ----------
-  document.getElementById("reroute-btn").addEventListener("click", () => {});
+  // Reroute is only available while the user is on a route
+  const rerouteBtn = document.getElementById("reroute-btn");
+  rerouteBtn.hidden = !isOnRoute();
+  onRouteChange((on) => {
+    rerouteBtn.hidden = !on;
+  });
+  rerouteBtn.addEventListener("click", () => {
+    // Recalculating the route comes later
+  });  
   document.getElementById("danger-btn").addEventListener("click", () => {});
   document.querySelectorAll(".report-item").forEach((item) => {
     item.addEventListener("click", () => {
