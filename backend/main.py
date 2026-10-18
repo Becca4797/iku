@@ -1,4 +1,5 @@
 import logging
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -11,6 +12,13 @@ from pydantic import BaseModel, Field
 # NOTE: the heavy modules (route_builder, store, scoring, ...) are imported
 # inside the route handler below, not here. That keeps server start-up and
 # --reload nearly instant. They load once, on the first route request.
+
+# The backend files import each other by plain name (from config import ...).
+# Make that work however uvicorn is started: from inside backend/, or from the
+# project folder with "uvicorn backend.main:app".
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 app = FastAPI()
 logger = logging.getLogger("uvicorn.error")
