@@ -14,13 +14,37 @@
     <p id="map-error" class="map-error" hidden></p>
 
     <!-- Search bar (Places autocomplete is added later) -->
-    <form id="search-form" class="search" role="search">
-      <svg viewBox="0 0 24 24" class="icon search-icon" aria-hidden="true">
-        <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" />
-        <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
-      </svg>
-      <input id="search-input" type="search" placeholder="Search" autocomplete="off" aria-label="Search for a destination" />
-    </form>
+    <!-- Destination first. The start row appears once a destination is chosen. -->
+    <div class="trip">
+      <form id="search-form" class="search" role="search">
+        <svg viewBox="0 0 24 24" class="icon search-icon" aria-hidden="true">
+          <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" />
+          <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+        </svg>
+        <input id="search-input" type="search" placeholder="Where to?" autocomplete="off" aria-label="Search for a destination" />
+      </form>
+
+      <form id="start-form" class="search" role="search" hidden>
+        <svg viewBox="0 0 24 24" class="icon search-icon" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2.6" />
+          <circle cx="12" cy="12" r="2.6" fill="currentColor" />
+        </svg>
+        <input id="start-input" type="search" placeholder="Choose starting point" autocomplete="off" aria-label="Choose a starting point" />
+      </form>
+    </div>
+
+    <p id="route-status" class="route-status" role="status" hidden></p>
+
+    <!-- Walking routes to choose from (filled in by routesUi.js) -->
+    <section id="routes-sheet" class="routes-sheet" hidden aria-label="Walking routes">
+      <!-- Drag down to collapse into a small bar, drag or tap to bring it back -->
+      <button id="routes-handle" class="routes-handle" type="button" aria-label="Hide routes" aria-expanded="true">
+        <span class="routes-grip"></span>
+      </button>
+      <p id="routes-message" class="routes-message" role="status" hidden></p>
+      <p id="routes-notice" class="routes-notice" role="status" hidden></p>
+      <ul id="routes-list" class="routes-list" role="listbox" aria-label="Choose a route"></ul>
+    </section>
 
     <!-- Map layers button: switches between satellite and standard map -->
     <button id="layers-btn" class="round-btn layers-btn" type="button" aria-label="Change map type">

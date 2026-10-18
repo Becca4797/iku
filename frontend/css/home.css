@@ -1,6 +1,7 @@
 /* The phone-shaped column for the home screen */
 .home {
   --bar-height: 96px;
+  --trip-offset: 76px; /* room under the search card */
   position: relative;
   width: 100%;
   max-width: 430px;
@@ -43,26 +44,71 @@
   display: block;
 }
 
-/* Search bar */
-.search {
+/* Destination + start card */
+.trip {
   position: absolute;
   top: max(env(safe-area-inset-top), 16px);
   left: 6%;
   right: 6%;
-  height: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 4; /* above the round buttons, so the suggestions dropdown is never covered */
+}
+
+/* When the start row is showing, sit the buttons just under it */
+.home.trip-open {
+  --trip-offset: 134px;
+}
+
+/* While the start dropdown is open, push the buttons (and the panels that
+   hang off them) down far enough to clear it. They move back up once a
+   start point is chosen. */
+.home.trip-open.start-open {
+  --trip-offset: 184px;
+}
+
+.search[hidden] {
+  display: none;
+}
+
+/* One row of the card. position: relative so the suggestions dropdown
+   sits directly under its own row. */
+.search {
+  position: relative;
+  height: 50px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 18px;
+  padding: 0 14px 0 18px;
   background: var(--white);
   border-radius: 20px;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Short message about route progress, above the bottom bar */
+.route-status {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: calc(var(--bar-height) + 12px);
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  font-size: 15px;
+  text-align: center;
   z-index: 2;
 }
 
+.route-status[data-kind="error"] {
+  border: 2px solid #d32f2f;
+}
+
 .search-icon {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   flex: none;
   color: var(--green);
 }
@@ -74,8 +120,196 @@
   outline: 0;
   background: transparent;
   font-family: var(--font-body);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--mahogany);
+}
+
+/* Walking routes sheet: slides up from the bottom bar */
+.routes-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--bar-height);
+  max-height: 46%;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.routes-sheet[hidden] {
+  display: none;
+}
+
+/* Drag handle at the top of the sheet. It is all that stays visible when the
+   sheet is collapsed. */
+.routes-handle {
+  flex: none;
+  width: 100%;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 28px 28px 0 0;
+  background: none;
+  cursor: grab;
+  touch-action: none; /* let us handle the drag instead of the page scrolling */
+}
+
+.routes-handle:active {
+  cursor: grabbing;
+}
+
+.routes-grip {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: #c4c4c4;
+}
+
+/* "Finding walking routes…" or an error, shown inside the sheet */
+.routes-message {
+  flex: none;
+  margin: 0;
+  padding: 2px 24px 4px;
+  font-size: 15px;
+  color: #444;
+}
+
+.routes-message.error {
+  padding-bottom: 20px;
+  color: #b00020;
+}
+
+.routes-message[hidden] {
+  display: none;
+}
+
+/* Placeholder rows while routes load */
+.route-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 26px;
+}
+
+.sk {
+  display: block;
+  background: #e4e4e4;
+  animation: sk-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.sk-icon { width: 46px; height: 46px; border-radius: 50%; flex: none; }
+.sk-shield { width: 34px; height: 38px; border-radius: 10px; flex: none; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sk-line { height: 12px; border-radius: 6px; width: 45%; }
+.sk-line.short { width: 28%; }
+
+@keyframes sk-pulse {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.routes-notice {
+  flex: none;
+  margin: 0;
+  padding: 4px 24px 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #b00020;
+}
+
+.routes-notice[hidden] {
+  display: none;
+}
+
+.routes-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 10px 0 6px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+/* Dotted divider between routes */
+.route-item + .route-item {
+  border-top: 3px dotted #cfcfcf;
+}
+
+.route-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 26px;
+  border: 0;
+  background: none;
+  font-family: var(--font-body);
+  text-align: left;
+  color: #000;
+  cursor: pointer;
+}
+
+.route-row.selected {
+  background: #fff2e8;
+}
+
+.route-mode {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  display: block;
+}
+
+.route-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.route-time {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.route-distance {
+  font-size: 13px;
+}
+
+.route-tag {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ececec;
+  font-size: 12px;
+}
+
+/* Safety shield, coloured inline (green / orange / red / grey) */
+.route-safety {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.route-shield-icon {
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+
+.route-score {
+  font-size: 13px;
+  font-weight: bold;
 }
 
 /* Round floating buttons on the map */
@@ -92,14 +326,14 @@
 }
 
 .layers-btn {
-  top: calc(max(env(safe-area-inset-top), 16px) + 76px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset));
   left: 6%;
   background: var(--white);
   color: #000;
 }
 
 .bell-btn {
-  top: calc(max(env(safe-area-inset-top), 16px) + 76px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset));
   right: 6%;
   background: #d32f2f;
   color: var(--white);
@@ -114,7 +348,7 @@
 /* Reroute and Danger Alert buttons, stacked under the bell */
 .alert-actions {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset) + 76px);
   right: 6%;
   display: flex;
   flex-direction: column;
@@ -199,7 +433,7 @@
 /* Report a problem panel */
 .report-panel {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset) + 76px);
   left: 14%;
   right: 12%;
   padding: 18px 12px 18px;
@@ -385,7 +619,7 @@
 /* Safe places panel */
 .safe-panel {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset) + 76px);
   bottom: calc(var(--bar-height) + 44px);
   left: 10%;
   right: 8%;
@@ -537,7 +771,7 @@
 /* Danger alert popup */
 .danger-panel {
   position: absolute;
-  top: calc(max(env(safe-area-inset-top), 16px) + 152px);
+  top: calc(max(env(safe-area-inset-top), 16px) + var(--trip-offset) + 76px);
   left: 10%;
   right: 10%;
   padding: 22px 12px 18px;

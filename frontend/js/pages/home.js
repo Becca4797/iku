@@ -5,7 +5,7 @@ import {
   getShowOpenEstablishments,
   setShowOpenEstablishments,
 } from "/js/mapSettings.js";
-import { isOnRoute, onRouteChange } from "/js/routeState.js";
+import { isOnRoute, setOnRoute, onRouteChange } from "/js/routeState.js";
 
 // Roughly King's Cross / Bloomsbury, London
 const LONDON_CENTRE = { lat: 51.5295, lng: -0.1245 };
@@ -49,169 +49,206 @@ function loadGoogleMaps(key) {
   });
 }
 
+// ---------- Destination + start ----------
+// Holds the chosen destination and start. As soon as both are set, asks the
+// back end for routes. (Drawing them on the map comes next.)
+const routeStatus = document.getElementById("route-status");
 
-async function setupPlaceAutocomplete(input, map) {
-  const { AutocompleteSuggestion, AutocompleteSessionToken } =
-    await google.maps.importLibrary("places");
+function showStatus(text, kind = "info") {
+  if (!routeStatus) {
+    if (text) console.log("[iku] status:", text);
+    return;
+  }
+  routeStatus.textContent = text;
+  routeStatus.dataset.kind = kind;
+  routeStatus.hidden = !text;
+}
 
-  let sessionToken = null;
-  let requestId = 0;
-  let selectedDestination = null;
+function describeRoutes(result) {
+  const routes = result.routes || [];
 
-  const form = document.getElementById("search-form");
-  if (!form || !input) return;
-
-  // Create a dropdown while keeping the existing search input.
-  const results = document.createElement("div");
-  results.id = "place-suggestions";
-  results.style.cssText = `
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: white;
-    color: #310400;
-    border-radius: 10px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-    overflow: hidden;
-    display: none;
-  `;
-
-  form.appendChild(results);
-
-  function closeSuggestions() {
-    results.replaceChildren();
-    results.style.display = "none";
+  if (!routes.length) {
+    const reason = result.errors?.[0] ? ` (${result.errors[0]})` : "";
+    return { text: `No walking routes found${reason}`, kind: "error" };
   }
 
-  input.addEventListener("input", async () => {
-    const query = input.value.trim();
-    const currentRequest = ++requestId;
+  const first = routes[0];
+  const minutes = Math.round(first.seconds / 60);
+  const km = (first.meters / 1000).toFixed(1);
+  const summary = `${first.label}: ${minutes} min, ${km} km`;
 
-    selectedDestination = null;
+  if (result.status === "unverified_only") {
+    return {
+      text: `No route passed the safety checks. ${routes.length} unverified alternative(s). ${summary}`,
+      kind: "error",
+    };
+  }
 
-    if (query.length < 3) {
-      closeSuggestions();
+  return { text: `${routes.length} route(s) found. ${summary}`, kind: "info" };
+}
+
+async function setupTrip(map) {
+  // Loaded here (not at the top of the file) so that a problem with these
+  // files can never stop the map itself from appearing.
+  const { createPlaceField } = await import("/js/placeField.js");
+  const { fetchRoutes } = await import("/js/routesApi.js");
+  const { createRoutesUi } = await import("/js/routesUi.js");
+
+  const startInput = document.getElementById("start-input");
+  const destInput = document.getElementById("search-input");
+  const startForm = document.getElementById("start-form");
+  const destForm = document.getElementById("search-form");
+  const home = document.querySelector(".home");
+
+  if (!startInput || !destInput || !startForm || !destForm) {
+    throw new Error(
+      "home.html is missing the start/destination inputs (start-input, search-input, start-form, search-form)"
+    );
+  }
+
+  let start = null;
+  let destination = null;
+  let latestRequest = 0;
+  let controller = null;
+  let startField = null;
+
+  // The "choose a route" sheet and the route lines on the map
+  const routesUi = createRoutesUi({
+    map,
+    sheet: document.getElementById("routes-sheet"),
+    handle: document.getElementById("routes-handle"),
+    message: document.getElementById("routes-message"),
+    list: document.getElementById("routes-list"),
+    notice: document.getElementById("routes-notice"),
+    onChoose: (route) =>
+      window.dispatchEvent(new CustomEvent("iku:route-chosen", { detail: route })),
+  });
+
+  function clearResults() {
+    latestRequest++; // any request still in flight is now out of date
+    controller?.abort();
+    showStatus("");
+    routesUi.clear();
+    setOnRoute(false); // no route wanted any more, so the bell hides Reroute
+  }
+
+  async function findRoutes() {
+    if (!start || !destination) return;
+
+    setOnRoute(true); // a route is wanted, so the bell shows Reroute
+    const thisRequest = ++latestRequest;
+    controller?.abort();
+    controller = new AbortController();
+
+    // Open the routes sheet straight away; it fills in when routes arrive
+    showStatus("");
+    routesUi.showLoading();
+
+    // Show both points on screen, above the sheet
+    const { LatLngBounds } = await google.maps.importLibrary("core");
+    if (thisRequest !== latestRequest) return;
+    const bounds = new LatLngBounds();
+    bounds.extend(start);
+    bounds.extend(destination);
+    const sheetHeight = document.getElementById("routes-sheet")?.offsetHeight ?? 0;
+    map.fitBounds(bounds, { top: 230, bottom: sheetHeight + 24, left: 40, right: 40 });
+
+    try {
+      const result = await fetchRoutes(start, destination, "balanced", controller.signal);
+      if (thisRequest !== latestRequest) return; // user changed something meanwhile
+
+      console.log("[iku] routes:", result);
+      const { text, kind } = describeRoutes(result);
+
+      if (result.routes?.length) {
+        showStatus(""); // the routes sheet takes over from the status line
+        await routesUi.show(result.routes, {
+          notice:
+            result.status === "unverified_only"
+              ? "None of these routes passed our safety checks, so their safety isn't verified."
+              : "",
+        });
+      } else {
+        routesUi.showError(text);
+      }
+
+      window.dispatchEvent(new CustomEvent("iku:routes-ready", { detail: result }));
+    } catch (error) {
+      if (error.name === "AbortError" || thisRequest !== latestRequest) return;
+      console.error("Route request failed:", error);
+      routesUi.showError(error.message || "Could not get routes");
+    }
+  }
+
+  // Ask the browser for the user's position and use it as the start.
+  function useCurrentLocation() {
+    if (!window.isSecureContext || !navigator.geolocation) {
+      showStatus(
+        "Current location needs a secure (https) connection. Please type a starting point instead.",
+        "error"
+      );
+      startInput.focus();
       return;
     }
 
-    if (!sessionToken) {
-      sessionToken = new AutocompleteSessionToken();
-    }
-
-    try {
-      const { suggestions } =
-        await AutocompleteSuggestion.fetchAutocompleteSuggestions({
-          input: query,
-          sessionToken,
-          includedRegionCodes: ["gb"],
-          language: "en-GB",
+    showStatus("Getting your location…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        showStatus("");
+        startField?.setPlace({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          address: "Current location",
         });
+      },
+      (err) => {
+        const denied = err.code === err.PERMISSION_DENIED;
+        showStatus(
+          denied
+            ? "Location permission was denied. Please type a starting point instead."
+            : "Couldn't get your location. Please type a starting point instead.",
+          "error"
+        );
+        startInput.focus();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
-      // Ignore outdated responses if the user has continued typing.
-      if (currentRequest !== requestId) return;
-
-      closeSuggestions();
-
-      for (const suggestion of suggestions) {
-        const prediction = suggestion.placePrediction;
-        if (!prediction) continue;
-
-        const option = document.createElement("button");
-        option.type = "button";
-        option.textContent = prediction.text.toString();
-
-        option.style.cssText = `
-          display: block;
-          width: 100%;
-          padding: 12px 14px;
-          border: 0;
-          background: white;
-          color: #310400;
-          text-align: left;
-          font: inherit;
-          cursor: pointer;
-        `;
-
-        option.addEventListener("mouseenter", () => {
-          option.style.background = "#fff2e8";
-        });
-
-        option.addEventListener("mouseleave", () => {
-          option.style.background = "white";
-        });
-
-        option.addEventListener("click", async () => {
-          try {
-            const place = prediction.toPlace();
-
-            await place.fetchFields({
-              fields: [
-                "formattedAddress",
-                "location",
-                "displayName",
-              ],
-            });
-
-            if (!place.location) return;
-
-            selectedDestination = {
-              lat: place.location.lat(),
-              lng: place.location.lng(),
-              address: place.formattedAddress ||
-                place.displayName ||
-                prediction.text.toString(),
-            };
-
-            input.value = selectedDestination.address;
-            closeSuggestions();
-
-            // End this autocomplete session.
-            sessionToken = null;
-
-            // For now, centre the map on the selected destination.
-            // Route calculation will be added separately.
-            map.panTo(place.location);
-            map.setZoom(16);
-
-            // Make the selected destination available to other
-            // front-end code without storing Google's place data.
-            window.dispatchEvent(
-              new CustomEvent("iku:destination-selected", {
-                detail: { ...selectedDestination },
-              })
-            );
-          } catch (error) {
-            console.error("Could not retrieve selected place:", error);
-          }
-        });
-
-        results.appendChild(option);
-      }
-
-      if (results.childElementCount > 0) {
-        results.style.display = "block";
-      }
-    } catch (error) {
-      console.error("Places autocomplete failed:", error);
-      closeSuggestions();
-    }
+  startField = await createPlaceField({
+    form: startForm,
+    input: startInput,
+    quickOptions: [{ label: "Use my current location", onPick: useCurrentLocation }],
+    // Only keep the buttons pushed down while the start dropdown is showing
+    onSuggestionsToggle: (open) => home?.classList.toggle("start-open", open),
+    onSelect: (place) => {
+      start = place;
+      window.dispatchEvent(new CustomEvent("iku:start-selected", { detail: { ...place } }));
+      findRoutes();
+    },
+    onClear: () => { start = null; clearResults(); },
   });
 
-  document.addEventListener("click", (event) => {
-    if (!form.contains(event.target)) {
-      closeSuggestions();
-    }
-  });
+  await createPlaceField({
+    form: destForm,
+    input: destInput,
+    onSelect: (place) => {
+      destination = place;
+      window.dispatchEvent(new CustomEvent("iku:destination-selected", { detail: { ...place } }));
 
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
+      // Now ask where they're starting from
+      startForm.hidden = false;
+      home?.classList.add("trip-open");
 
-    // Don't treat unselected text as a confirmed destination.
-    if (!selectedDestination) {
-      input.focus();
-    }
+      if (start) {
+        findRoutes();
+      } else {
+        map.panTo(place);
+        map.setZoom(16);
+        startInput.focus(); // opens the "Use my current location" shortcut
+      }
+    },
+    onClear: () => { destination = null; clearResults(); },
   });
 }
 
@@ -234,15 +271,18 @@ async function loadMap() {
       gestureHandling: "greedy",
       clickableIcons: false,
     });
-    const searchInput = document.getElementById("search-input");
-
-    setupPlaceAutocomplete(searchInput, map).catch(error => {
-  console.error("Autocomplete setup failed:", error);
-});
   } catch (err) {
     console.error(err);
     showMapError("The map couldn't load: " + err.message);
+    return map;
   }
+
+  // Start/destination is set up separately: if it fails, the map still works.
+  setupTrip(map).catch((error) => {
+    console.error("Start/destination setup failed:", error);
+    showStatus("Start/destination search failed to load: " + error.message, "error");
+  });
+
   return map;
 }
 
@@ -250,15 +290,15 @@ async function start() {
   let map; // filled in by loadMap() below; buttons check it before using it
 
   // Layers button: switch between satellite-with-labels and the standard map
-  document.getElementById("layers-btn").addEventListener("click", () => {
+  document.getElementById("layers-btn")?.addEventListener("click", () => {
     if (!map) return;
     map.setMapTypeId(map.getMapTypeId() === "hybrid" ? "roadmap" : "hybrid");
   });
 
-  // Search: Places autocomplete comes later
-  document.getElementById("search-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-  });
+  // Pressing Enter in the start/destination boxes must never reload the page
+  for (const id of ["start-form", "search-form"]) {
+    document.getElementById(id)?.addEventListener("submit", (event) => event.preventDefault());
+  }
 
   // ---------- Bell, flag and bookmark toggles ----------
   // Opening one closes the others so they never overlap.
@@ -321,7 +361,7 @@ async function start() {
   });
   rerouteBtn.addEventListener("click", () => {
     // Recalculating the route comes later
-  });  
+  });
   // Danger Alert: hide the bell buttons and show the emergency popup
   document.getElementById("danger-btn").addEventListener("click", () => {
     setBell(false);
